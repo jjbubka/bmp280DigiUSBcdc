@@ -20,6 +20,7 @@
  PRIVATE FUNCTIONS
  ***************************************************************************/
 
+TwoWire i2c(I2C_DEV, I2C_FAST_MODE); 
 
 Adafruit_BMP280::Adafruit_BMP280()
 { }
@@ -27,23 +28,24 @@ Adafruit_BMP280::Adafruit_BMP280()
 
 bool Adafruit_BMP280::begin() {
 
-  TinyWireM.begin();
+  i2c.begin();
 
   if (read(BMP280_REGISTER_CHIPID, 1) != 0x58)
     return false;
 
   readCoefficients();
 
-  TinyWireM.beginTransmission(BMP280_ADDRESS);
-  TinyWireM.write(BMP280_REGISTER_CONTROL);
-  TinyWireM.write(0x3F);
-  TinyWireM.endTransmission();
+  i2c.beginTransmission(BMP280_ADDRESS);
+  i2c.write(BMP280_REGISTER_CONTROL);
+  i2c.write(0x3F);
+  i2c.endTransmission();
 
   return true;
 }
 
 
 uint16_t Adafruit_BMP280::read16_LE(byte reg) {
+
   uint16_t temp = read(reg, 2);
   return (temp >> 8) | (temp << 8);
 
@@ -60,16 +62,16 @@ uint32_t Adafruit_BMP280::read(byte reg, byte nBytes)
 {
   uint32_t value;
 
-  TinyWireM.beginTransmission(BMP280_ADDRESS);
-  TinyWireM.write((uint8_t)reg);
-  TinyWireM.endTransmission();
-  TinyWireM.requestFrom(BMP280_ADDRESS, nBytes);
+  i2c.beginTransmission(BMP280_ADDRESS);
+  i2c.write((uint8_t)reg);
+  i2c.endTransmission();
+  i2c.requestFrom(BMP280_ADDRESS, nBytes);
     
-  value = TinyWireM.read();
+  value = i2c.read();
 
   for (int i = 1; i < nBytes; ++i) {
 	  value <<= 8;
-	  value |= TinyWireM.read();
+	  value |= i2c.read();
   }
 
   return value;
@@ -102,7 +104,7 @@ void Adafruit_BMP280::readCoefficients(void)
 
 */
 /**************************************************************************/
-int Adafruit_BMP280::readTemperature(void)
+float Adafruit_BMP280::readTemperature(void)
 {
   int32_t var1, var2;
 
@@ -127,7 +129,7 @@ int Adafruit_BMP280::readTemperature(void)
 
 */
 /**************************************************************************/
-int Adafruit_BMP280::readPressure(void) {
+float Adafruit_BMP280::readPressure(void) {
   int64_t var1, var2, p;
 
   // Must be done first to get the t_fine variable set up
@@ -153,6 +155,5 @@ int Adafruit_BMP280::readPressure(void) {
   var2 = (((int64_t)_bmp280_calib.dig_P8) * p) >> 19;
 
   p = ((p + var1 + var2) >> 8) + (((int64_t)_bmp280_calib.dig_P7)<<4);
-  return (p*100)>>8;
+  return p/256;
 }
-

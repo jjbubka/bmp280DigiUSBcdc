@@ -2,24 +2,28 @@
  Name:		bmp280DigiUSBcdc.ino
  Created:	09/03/2019 11:17:05
  Author:	jjbubka
+ Platform:  STM32F103
 */
 
-#include <DigiCDC.h>
+#include <Wire.h>
 
 #include "Adafruit_BMP280.h"
 
 Adafruit_BMP280 bme; // I2C
 
 uint8_t received, command;
-int32_t cTemp, cPress;
+float cTemp, cPress;
 unsigned long lastUpdate;
+
 
 void setup() {
 	// initialize the digital pin as an output.
-	SerialUSB.begin();
+	Serial.begin();
+	pinMode(PC13, OUTPUT);
 	bme.begin();
 	cTemp = bme.readTemperature();
 	cPress = bme.readPressure();
+
 	lastUpdate = millis();
 }
 
@@ -29,17 +33,22 @@ void loop() {
 	
 	if (millis() - lastUpdate >= 500) {
 		lastUpdate = millis();
-		cTemp = (cTemp * 90 + bme.readTemperature() * 10) / 100;
-		cPress = (cPress *  90 + bme.readPressure() * 10) / 100;
+		cTemp = cTemp * 0.95 + bme.readTemperature() * 0.05;
+		if (cPress < 100000)
+			cPress = bme.readPressure();
+		else {
+			cPress = cPress * 0.95 + bme.readPressure() * 0.05;
+		}
+		digitalWrite(PC13, !digitalRead(PC13));
 	}
 
 	
-	while (SerialUSB.available()) {
-		received = SerialUSB.read();
+	while (Serial.available()) {
+		received = Serial.read();
 		if (command == 'p') {
 			if (received == 10) {
 				command = 0;
-				SerialUSB.println(cPress);
+				Serial.println(cPress);
 			}
 			else if (received != 13) {
 				command = 0;
@@ -49,22 +58,16 @@ void loop() {
 		else if (command == 't') {
 			if (received == 10) {
 				command = 0;
-				SerialUSB.println(cTemp);
+				Serial.println(cTemp);
 			}
 			else if (received != 13) {
 				command = 0;
 			}
 		}
+		else
+			command = received;
 
 
 	}
 	
-	
-	//SerialUSB.delay(10);
-	/*
-	if you don't call a SerialUSB function (write, print, read, available, etc)
-	every 10ms or less then you must throw in some SerialUSB.refresh();
-	for the USB to keep alive - also replace your delays - ie. delay(100);
-	with SerialUSB.delays ie. SerialUSB.delay(100);
-	*/
 }

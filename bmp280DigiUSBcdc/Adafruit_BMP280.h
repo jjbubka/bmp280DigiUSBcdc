@@ -16,13 +16,14 @@
 #ifndef __BMP280_H__
 #define __BMP280_H__
 
-#include <TinyWireM.h>
+#include <Wire.h>
 
 
 /*=========================================================================
     I2C ADDRESS/BITS
     -----------------------------------------------------------------------*/
-    #define BMP280_ADDRESS                (0x77)
+    #define BMP280_ADDRESS                (0x76)
+	#define I2C_DEV 1				//bus I2C 1 (PB6 SCL - PB7 SDA)
 /*=========================================================================*/
 
 /*=========================================================================
@@ -113,8 +114,8 @@ class Adafruit_BMP280
     Adafruit_BMP280(void);
 
     bool begin(void);
-    int readTemperature(void);
-    int readPressure(void);
+    float readTemperature(void);
+    float readPressure(void);
 
   private:
 
